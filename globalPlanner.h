@@ -1,6 +1,3 @@
-//Vanisha Agarwal   Contact - 7970456030   Mail - vanishaag23@gmail.com
-//Vignesh S. Iyer   Contact - 7506017898   Mail - vignesh02iyer@gmail.com
-
 #include "iostream"
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -13,6 +10,8 @@
 #include "tf/transform_datatypes.h"
 #include <string>
 #include <boost/geometry.hpp>
+#include "sensor_msgs/LaserScan.h"
+#include <bits/stdc++.h>
 
 #define SEMI_CIRCLE 180
 #define CIRCLE 360
@@ -101,6 +100,14 @@ namespace gp
             //Node Handle
             ros::NodeHandle nh; 
 
+            float front_;
+            float right_;
+            float left_;
+
+            //Obstacle Avoidance caller
+            ros::Subscriber sub_obs_;
+
+
 
         public:
             //Class Constructor
@@ -117,9 +124,10 @@ namespace gp
             void linearMovement();
             //Caller function 
             void caller();
+            //Obstacle avoidance callback
+            void obsCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
+            //Decision maker between Obstacle avoidance and Global Planner
+            void decision();
+
     };
 }
-
-
-
-

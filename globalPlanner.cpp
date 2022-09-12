@@ -11,12 +11,12 @@ globalPlanner::globalPlanner()
     in_error_distance_ = 0;
     diff_angle_ = 0;
     error_angle_ = 0;
-    linear_max_ = 1;
+    linear_max_ = 0.25;
     linear_min_ =0.2;
-    ang_max_ = 0.75;
+    ang_max_ = 0.5;
     ang_min_ = 0.1;
-    dist_thres_ = 0.1;
-    ang_thres_ = 1;
+    dist_thres_ = 1.5;
+    ang_thres_ = 2;
 }
 
 void globalPlanner::caller()
@@ -31,6 +31,8 @@ void globalPlanner::caller()
     goal_lat_ = goals[0];
     goal_long_ = goals[1];
 
+    std::cout<<"goal_lat_: "<<goal_lat_<<" goal_long_: "<<goal_long_<<std::endl;
+
     ros::Rate loop_rate(1);
     pub_vel_ = nh.advertise<geometry_msgs::Twist> ("/cmd_vel", 1);                    // Velocity Publisher
     sub_gps_ = nh.subscribe("/fix", 1000, &globalPlanner::gpsCallback, this);         //Callback for gps values
@@ -41,9 +43,11 @@ void globalPlanner::caller()
 
 void globalPlanner::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& msg)
 {
-    sensor_lat_ = msg->latitude;
-    sensor_long_ = msg->longitude;
+    sensor_lat_ = (msg->latitude);
+    sensor_long_ = (msg->longitude);
+    std::cout<<"sensor_lat_: "<<std::setprecision(16)<<sensor_lat_<<" sensor_long_: "<<std::setprecision(16)<<sensor_long_<<std::endl;
     in_error_distance_ = error_distance_;
+    std::cout << error_distance_<<std::endl;
     distance();
 }
 
@@ -73,21 +77,23 @@ void globalPlanner::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 void globalPlanner::distance()
 {
     double diff_long = goal_long_ - sensor_long_;
-
+    double diff_lat = goal_lat_ - sensor_lat_;
+    double sensor_lat_deg = sensor_lat_ * M_PI / 180.0;
+    //std::cout<<"sensor longitude"<<sensor_long_;
     //Formula for angle calculation in degrees
     double y = sin(diff_long) * cos(goal_lat_);
     double x = cos(sensor_lat_) * sin(goal_lat_) - sin(sensor_lat_) * cos(goal_lat_) * cos(diff_long);
     error_angle_ = atan2(y, x);
     error_angle_ = -error_angle_ * SEMI_CIRCLE / M_PI;
 
-    std::cout<<"error_angle_ "<<error_angle_<<std::endl;
-    
-    //Formula for distance calculation in metres
     typedef boost::geometry::model::point<double, 2, boost::geometry::cs::spherical_equatorial<boost::geometry::degree>> spherical_point;
     spherical_point p(sensor_long_, sensor_lat_);
     spherical_point q(goal_long_, goal_lat_);
     double dist = boost::geometry::distance(p, q);
     error_distance_ = dist*EARTH_RADIUS*1000;
+
+    //formula for calculating distance using formula
+
 
     //Print the Distance from the goal 
     std::cout<<"distance is "<<error_distance_<<std::endl;
@@ -95,7 +101,7 @@ void globalPlanner::distance()
 
 void globalPlanner::rotation()
 {   
-	float ang_z, vel_x;
+    float ang_z, vel_x;
     pid_ l,a;
     l.kp = 0.05, l.kd = 0.06;
     a.kp = 0.75, a.kd = 0;                
@@ -171,7 +177,7 @@ void globalPlanner::rotation()
 
 void globalPlanner::linearMovement()
 {
-	float vel_x; 
+    float vel_x; 
     pid_ lm;
     lm.kp = 0.05,lm.kd = 0.06;  
                                               
